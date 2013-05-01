@@ -1,0 +1,24 @@
+# Python
+*.pyc
+
+# Sqlite
+*.db*
+
+# Git
+*.orig
+*.rej
+
+# Vim
+.*.swp
+.*.swo
+.*.swp
+
+# Emacs
+*~
+
+# distutil
+MANIFEST
+dist/*
+build/*
+*.egg-info
+*.egg

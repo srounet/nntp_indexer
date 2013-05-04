@@ -8,8 +8,8 @@ import gevent.pool
 import gevent.queue
 
 import nntp.exception
-import nntp.database
 import nntp.group
+import nntp.plugin
 import nntp.server
 
 
@@ -18,17 +18,26 @@ class Manager(object):
         self.config = config
 
         self.groups = []
-        self.queue = gevent.queue.Queue()
+        self.plugins = {}
         self.pool_size = int(config['threads'])
         self.pool = gevent.pool.Pool(self.pool_size)
+        self.queue = gevent.queue.Queue()
         self.roundrobin = config['roundrobin']
         self.servers = []
 
+        self.load_plugins()
         self.setup_database()
 
         self.logger = logging.getLogger('Manager')
         self.logger.setLevel(logging.INFO)
         self.logger.addHandler(logging.StreamHandler())
+
+    def load_plugins(self):
+        plugin_filenames = nntp.plugin.scan_folder('nntp/plugins')
+        for plugin_name in plugin_filenames:
+            plugin = nntp.plugin.load_module(plugin_name)
+            plugin_type = plugin.__type__
+            self.plugins[plugin_type] = plugin
 
     def connect(self):
         for account in self.config['accounts']:
@@ -45,8 +54,11 @@ class Manager(object):
             server.disconnect()
 
     def setup_database(self):
-        self.database = nntp.database.SqliteDatabase(
-            filepath = self.config['database']['filepath']
+        database_type = self.config['database']['type']
+        if not database_type in self.plugins:
+            raise nntp.exception.NoSuchPlugin(database_type)
+        self.database = self.plugins[database_type](
+            self.config['database']
         )
 
     @property

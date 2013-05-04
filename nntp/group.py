@@ -19,11 +19,11 @@ class Group(object):
         self.current = None
 
     def head(self, thread):
-        _, count, first, last, name = thread.group(self.name)
+        _, count, first, end, name = thread.group(self.name)
 
         self.count = int(count)
         self.first = int(first)
-        self.last = int(last)
+        self.end = int(end)
         self.current = int(first)
         thread.working = False
 
@@ -45,4 +45,15 @@ class Group(object):
         except EOFError:
             return self.xover(thread, start, end)
         thread.working = False
-        return items
+        records = [{
+            'group': self.name,
+            'article_id': int(record[0]),
+            'subject': record[1],
+            'author': record[2],
+            'date': record[3],
+            'message_id': record[4],
+            'reference': record[5],
+            'size': int(record[6]),
+            'lines': int(record[7])
+        } for record in items]
+        return records, self.name, int(end)

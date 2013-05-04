@@ -25,12 +25,15 @@ class Manager(object):
         self.roundrobin = config['roundrobin']
         self.servers = []
 
-        self.load_plugins()
-        self.setup_database()
-
         self.logger = logging.getLogger('Manager')
         self.logger.setLevel(logging.INFO)
         self.logger.addHandler(logging.StreamHandler())
+
+        self.load_plugins()
+        self.setup_database()
+
+    def terminate(self):
+        self.running = False #XXX Use it
 
     def load_plugins(self):
         plugin_filenames = nntp.plugin.scan_folder('nntp/plugins')
@@ -38,6 +41,7 @@ class Manager(object):
             plugin = nntp.plugin.load_module(plugin_name)
             plugin_type = plugin.__type__
             self.plugins[plugin_type] = plugin
+            self.logger.info('Found database plugin: {}'.format(plugin_type))
 
     def connect(self):
         for account in self.config['accounts']:
@@ -57,6 +61,8 @@ class Manager(object):
         database_type = self.config['database']['type']
         if not database_type in self.plugins:
             raise nntp.exception.NoSuchPlugin(database_type)
+        self.logger.info('Manager - using database plugin: {}'.format(
+            database_type))
         self.database = self.plugins[database_type](
             self.config['database']
         )
@@ -67,17 +73,31 @@ class Manager(object):
 
     def add_group(self, groupname):
         group = nntp.group.Group(groupname)
-        self.groups.append(group)
-
-        self.logger.info('Manager - added group: {}'.format(groupname))
         group.head(self.server.thread)
+        if not self.database.has_group(groupname):
+            self.database.add_group(groupname, group.first)
+        group_status = self.database.group_status(groupname)
+        group.current = group_status['current']
+        self.groups.append(group)
+        self.logger.info('Manager - added group: {}'.format(groupname))
 
     def on_item(self, g):
-        records = g.value
+        records, groupname, end = g.value
+        print records, groupname, end
         for record in records:
+            if self.database.has_post(record['article_id']):
+                self.logger.info("Manager - article exists: {}".format(
+                    record['acticle_id']))
+                continue
             self.database.insert(record)
+        # Update group current
+        self.database.update_group(
+            groupname,
+            end)
 
     def index(self):
+        if not self.groups:
+            return
         groups = itertools.cycle(self.groups)
         for group in groups:
             current = group.current
@@ -88,3 +108,9 @@ class Manager(object):
                 current,
                 current + 1000)
             g.link_value(self.on_item)
+
+            if group.current > group.end:
+                for index, gr in enumerate(self.groups):
+                    if gr.name == group.name:
+                        self.groups.pop(index)
+                self.index()

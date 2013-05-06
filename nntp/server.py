@@ -6,6 +6,7 @@ import logging
 import nntplib
 
 import gevent.monkey; gevent.monkey.patch_all()
+import gevent
 
 import nntp.exception
 
@@ -66,3 +67,4 @@ class Server(object):
             if not thread.working:
                 thread.working = True
                 return thread
+            gevent.sleep(1)

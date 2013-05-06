@@ -4,6 +4,8 @@
 import itertools
 import logging
 
+import gevent
+import gevent.monkey; gevent.monkey.patch_all()
 import gevent.pool
 import gevent.queue
 

@@ -1,0 +1,29 @@
+accounts:
+  - username: username_1
+    password: password_1
+    host: host_1
+    port: port_1
+    threads: 10
+  - username: username_2
+    password: password_2
+    host: hosts_2
+    port: port_2
+    threads: 10
+
+groups:
+  - name: 'alt.binaries.series.tv.divx.french'
+  - name: 'alt.binaries.mp3'
+  - name: 'alt.binaries.multimedia'
+
+#database:
+#  type: sqlite
+#  filepath: '/home/usenet/projects/nntp/headers.db'
+
+database:
+  type: mongo
+  database: 'usenet_indexer'
+  collection: 'posts'
+  host: db1
+
+roundrobin: True
+threads: 10

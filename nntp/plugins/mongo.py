@@ -17,9 +17,9 @@ class MongoPlugin(nntp.plugins.base.BasePlugin):
         """A mongo database plugin.
 
         Note: actually the system plugin does not allow to have multiple
-        database instance for each server thread, that why we have to trick
+        database instance for each server thread, that's why we have to trick
         the AutoReconnect exception. With too much thread we will reach mongodb
-        in minutes.
+        max connection in minutes.
         """
         if not 'database' in config:
             raise nntp.exception.InvalidConfigFile('database')
